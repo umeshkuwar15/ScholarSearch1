@@ -1,0 +1,495 @@
+ <!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScholarSearch - Academic Literature Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <style>
+        :root { --primary-glow: #0d6efd; --card-bg: #1a1d23; --border-color: #2d323e; }
+        body { background: #0f1117; min-height: 100vh; }
+        .navbar-brand { font-weight: 700; font-size: 1.5rem; background: linear-gradient(135deg,#0d6efd,#6610f2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .search-section { padding: 3rem 0 2rem; }
+        .search-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .form-floating>.form-control,.form-floating>.form-select { background: #0f1117; border: 1px solid var(--border-color); color: #e0e0e0; height: 58px; }
+        .form-floating>.form-control:focus,.form-floating>.form-select:focus { border-color: var(--primary-glow); box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
+        .form-floating label { color: #6c757d; padding: 1rem; }
+        .btn-search { padding: 0.75rem 2rem; font-weight: 600; border-radius: 10px; background: linear-gradient(135deg,#0d6efd,#6610f2); border: none; height: 58px; transition: all 0.3s ease; }
+        .btn-search:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(13,110,253,0.4); }
+        .source-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .source-arxiv { background: #1a5276; color: #85c1e9; }
+        .source-crossref { background: #1e8449; color: #82e0aa; }
+        .source-openalex { background: #6c3483; color: #d2b4de; }
+        .source-pubmed { background: #0e6655; color: #76d7c4; }
+        .source-semanticscholar { background: #7d6608; color: #f9e79f; }
+        .result-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; transition: all 0.2s ease; }
+        .result-card:hover { border-color: var(--primary-glow); box-shadow: 0 4px 20px rgba(13,110,253,0.1); transform: translateY(-2px); }
+        .result-title { color: #e0e0e0; font-weight: 600; font-size: 1.1rem; line-height: 1.4; text-decoration: none; }
+        .result-title:hover { color: #0d6efd; }
+        .result-authors { color: #9ca3af; font-size: 0.9rem; }
+        .result-meta { color: #6c757d; font-size: 0.85rem; }
+        .result-abstract { color: #9ca3af; font-size: 0.9rem; line-height: 1.6; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); }
+        .result-abstract.collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .source-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+        .stats-section { text-align: center; padding: 0.5rem 0; }
+        .stat-item { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin: 0.25rem; }
+        .loading-spinner { display: none; text-align: center; padding: 3rem; }
+        .loading-spinner.active { display: block; }
+        .section-header { display: flex; align-items: center; gap: 0.75rem; margin: 1.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border-color); }
+        .section-header h3 { color: #e0e0e0; font-weight: 600; margin: 0; }
+        .error-section { background: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+        .footer { text-align: center; padding: 2rem 0; color: #6c757d; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark border-bottom border-secondary border-opacity-25">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-search-heart"></i> ScholarSearch</a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-secondary small"><i class="bi bi-book"></i> 5 scholarly APIs</span>
+                {% if user %}
+                <div class="dropdown">
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> {{ user.username }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    </ul>
+                </div>
+                {% else %}
+                <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </button>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#registerModal">
+                    <i class="bi bi-person-plus"></i> Register
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="search-section">
+            <div class="search-card">
+                <form action="/search" method="get" id="searchForm">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="q" name="q" placeholder="Search keywords, title..." value="{{ query }}" autocomplete="off">
+                                <label for="q"><i class="bi bi-search"></i> Search query</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="author" name="author" placeholder="Author name (optional)" value="{{ author }}" autocomplete="off">
+                                <label for="author"><i class="bi bi-person"></i> Author (optional)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-floating">
+                                <select class="form-select" id="source" name="source">
+                                    <option value="all" {% if source == 'all' %}selected{% endif %}>All Sources</option>
+                                    <option value="arxiv" {% if source == 'arxiv' %}selected{% endif %}>arXiv</option>
+                                    <option value="crossref" {% if source == 'crossref' %}selected{% endif %}>CrossRef</option>
+                                    <option value="openalex" {% if source == 'openalex' %}selected{% endif %}>OpenAlex</option>
+                                    <option value="pubmed" {% if source == 'pubmed' %}selected{% endif %}>PubMed</option>
+                                    <option value="semanticscholar" {% if source == 'semanticscholar' %}selected{% endif %}>Semantic Scholar</option>
+                                </select>
+                                <label for="source"><i class="bi bi-globe"></i> Source</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-search text-white w-100" id="searchBtn">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <select class="form-select" id="num_results" name="num_results">
+                                    <option value="5">5 results</option>
+                                    <option value="10" selected>10 results</option>
+                                    <option value="20">20 results</option>
+                                    <option value="30">30 results</option>
+                                    <option value="50">50 results</option>
+                                </select>
+                                <label for="num_results"><i class="bi bi-list-ol"></i> Results per source</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-secondary">Searching across scholarly sources...</p>
+        </div>
+
+        {% if error %}
+        <div class="error-section">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                <div>
+                    <strong class="text-danger">Error</strong>
+                    <p class="mb-0 text-secondary">{{ error }}</p>
+                </div>
+        </div>
+        {% endif %}
+
+        {% if results is not none %}
+        <div class="stats-section">
+            <div class="stat-item">
+                <i class="bi bi-journal-text text-primary"></i>
+                <span><strong class="text-light">{{ total }}</strong> articles found</span>
+            </div>
+            {% if query %}
+            <div class="stat-item">
+                <i class="bi bi-tag text-info"></i>
+                <span>Query: <strong class="text-light">{{ query }}</strong></span>
+            </div>
+            {% endif %}
+            {% if author %}
+            <div class="stat-item">
+                <i class="bi bi-person text-success"></i>
+                <span>Author: <strong class="text-light">{{ author }}</strong></span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% for result in results %}
+            {% if result.articles %}
+            <div class="section-header">
+                {% set src = result.source|lower %}
+                {% if src == 'arxiv' %}
+                <span class="source-indicator" style="background:#0d6efd"></span>
+                {% elif src == 'crossref' %}
+                <span class="source-indicator" style="background:#198754"></span>
+                {% elif src == 'openalex' %}
+                <span class="source-indicator" style="background:#6f42c1"></span>
+                {% elif src == 'pubmed' %}
+                <span class="source-indicator" style="background:#0dcaf0"></span>
+                {% elif src == 'semanticscholar' %}
+                <span class="source-indicator" style="background:#ffc107"></span>
+                {% else %}
+                <span class="source-indicator" style="background:#6c757d"></span>
+                {% endif %}
+                <h3>{{ result.source }}</h3>
+                <span class="badge bg-secondary bg-opacity-25 text-secondary ms-2">
+                    {{ result.articles|length }} results
+                    {% if result.total_results > result.articles|length %}({{ result.total_results }} total){% endif %}
+                </span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+                {% if page > 1 %}
+                <a class="btn btn-outline-primary btn-sm" href="/search?q={{ query|urlencode }}&author={{ author|urlencode }}&source={{ source }}&num_results={{ num_results }}&page={{ page - 1 }}">
+                    <i class="bi bi-chevron-left"></i> Previous
+                </a>
+                {% else %}
+                <span class="btn btn-outline-secondary btn-sm disabled"><i class="bi bi-chevron-left"></i> Previous</span>
+                {% endif %}
+                <span class="text-secondary small">Page <strong class="text-light">{{ page }}</strong></span>
+                <a class="btn btn-outline-primary btn-sm" href="/search?q={{ query|urlencode }}&author={{ author|urlencode }}&source={{ source }}&num_results={{ num_results }}&page={{ page + 1 }}">
+                    Next <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+            {% for article in result.articles %}
+            <div class="result-card mb-3">
+                <h5 class="mb-1">
+                    {% if article.url %}
+                    <a href="{{ article.url }}" target="_blank" rel="noopener" class="result-title">
+                        {{ article.title }} <i class="bi bi-box-arrow-up-right ms-1" style="font-size:0.75rem;"></i>
+                    </a>
+                    {% else %}
+                    <span class="result-title">{{ article.title }}</span>
+                    {% endif %}
+                </h5>
+                <div class="result-authors mb-1"><i class="bi bi-people"></i> {{ article.short_authors }}</div>
+                <div class="result-meta d-flex flex-wrap gap-3">
+                    {% if article.year %}<span><i class="bi bi-calendar3"></i> {{ article.year }}</span>{% endif %}
+                    {% if article.journal %}<span><i class="bi bi-journal"></i> {{ article.journal }}</span>{% endif %}
+                    {% if article.citation_count %}<span><i class="bi bi-quote"></i> {{ article.citation_count }} citations</span>{% endif %}
+                    {% if article.doi %}<span><i class="bi bi-link-45deg"></i> DOI: {{ article.doi }}</span>{% endif %}
+                    <span class="source-badge source-{{ result.source|lower }}">{{ result.source }}</span>
+                </div>
+                {% if article.abstract %}
+                <div class="result-abstract collapsed">
+                    <p class="mb-0">{{ article.abstract[:500] }}{% if article.abstract|length > 500 %}...{% endif %}</p>
+                </div>
+                {% endif %}
+                <div class="mt-2 pt-2 border-top border-secondary d-flex gap-2">
+                    {% if user %}
+                    <button class="btn btn-sm btn-outline-danger btn-fav-inactive" onclick="toggleFavorite(this, {title:'{{ article.title|escape }}', authors:{{ article.authors|tojson }}, source:'{{ result.source }}', year:{{ article.year|default('null') }}, doi:'{{ article.doi|escape }}', url:'{{ article.url|escape }}', citation_count:{{ article.citation_count|default(0) }}, abstract:'{{ article.abstract[:200]|escape }}'})">
+                        <i class="bi bi-heart"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="openFeedback(this)">
+                        <i class="bi bi-star"></i> Rate
+                    </button>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled title="Login to favorite/rate">
+                        <i class="bi bi-heart"></i> <i class="bi bi-star"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% elif result.error %}
+            <div class="section-header">
+                <span class="source-indicator bg-secondary"></span>
+                <h3>{{ result.source }}</h3>
+            </div>
+            <div class="error-section">
+                <i class="bi bi-exclamation-circle text-warning"></i>
+                <span class="text-secondary">{{ result.error }}</span>
+            </div>
+            {% else %}
+            <div class="section-header">
+                <span class="source-indicator bg-secondary"></span>
+                <h3>{{ result.source }}</h3>
+            </div>
+            <div class="text-center text-secondary py-4">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                <p class="mb-0">No results found from {{ result.source }}</p>
+            </div>
+            {% endif %}
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        <div class="container">
+            <p class="mb-0">
+                <i class="bi bi-search-heart"></i> ScholarSearch v1.0.0 &mdash;
+                Powered by <a href="https://arxiv.org" class="text-secondary" target="_blank">arXiv</a>,
+                <a href="https://crossref.org" class="text-secondary" target="_blank">CrossRef</a>,
+                <a href="https://openalex.org" class="text-secondary" target="_blank">OpenAlex</a>,
+                <a href="https://pubmed.ncbi.nlm.nih.gov/" class="text-secondary" target="_blank">PubMed</a>,
+                <a href="https://semanticscholar.org" class="text-secondary" target="_blank">Semantic Scholar</a>
+            </p>
+        </div>
+
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:var(--card-bg);border:1px solid var(--border-color);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="bi bi-box-arrow-in-right"></i> Login</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/login" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:var(--card-bg);border:1px solid var(--border-color);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Register</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/register" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="full_name" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Institution</label>
+                            <input type="text" name="institution" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-person-plus"></i> Register</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="feedbackModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:var(--card-bg);border:1px solid var(--border-color);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="bi bi-star"></i> Rate this Paper</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="feedbackForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="feedbackPaperId" name="paper_id">
+                        <input type="hidden" id="feedbackPaperTitle" name="paper_title">
+                        <input type="hidden" id="feedbackPaperAuthors" name="paper_authors">
+                        <input type="hidden" id="feedbackPaperSource" name="paper_source">
+                        <div class="mb-3">
+                            <label class="form-label">Rating</label>
+                            <div class="star-rating">
+                                <i class="bi bi-star fs-2 text-warning star-btn" data-star="1"></i>
+                                <i class="bi bi-star fs-2 text-warning star-btn" data-star="2"></i>
+                                <i class="bi bi-star fs-2 text-warning star-btn" data-star="3"></i>
+                                <i class="bi bi-star fs-2 text-warning star-btn" data-star="4"></i>
+                                <i class="bi bi-star fs-2 text-warning star-btn" data-star="5"></i>
+                                <input type="hidden" id="feedbackRating" name="rating" value="0">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comment (optional)</label>
+                            <textarea name="comment" class="form-control" rows="3" placeholder="Share your thoughts about this paper..."></textarea>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="feedbackPublic" name="is_public" value="true">
+                            <label class="form-check-label" for="feedbackPublic">Make this feedback public</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-send"></i> Submit Feedback</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('searchForm')?.addEventListener('submit', function() {
+            document.getElementById('loadingSpinner').classList.add('active');
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('searchBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> Searching...';
+        });
+        document.querySelectorAll('.result-abstract').forEach(function(el) {
+            el.addEventListener('click', function() { this.classList.toggle('collapsed'); });
+        });
+
+        document.querySelectorAll('.star-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var val = parseInt(this.getAttribute('data-star'));
+                document.getElementById('feedbackRating').value = val;
+                document.querySelectorAll('.star-btn').forEach(function(s) {
+                    var sv = parseInt(s.getAttribute('data-star'));
+                    if (sv <= val) {
+                        s.classList.remove('bi-star');
+                        s.classList.add('bi-star-fill');
+                    } else {
+                        s.classList.remove('bi-star-fill');
+                        s.classList.add('bi-star');
+                    }
+                });
+            });
+        });
+
+        document.getElementById('feedbackForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var data = {
+                paper: {
+                    title: document.getElementById('feedbackPaperTitle').value,
+                    authors: document.getElementById('feedbackPaperAuthors').value ? document.getElementById('feedbackPaperAuthors').value.split('; ') : [],
+                    source: document.getElementById('feedbackPaperSource').value,
+                },
+                rating: parseInt(document.getElementById('feedbackRating').value) || 0,
+                comment: this.querySelector('textarea[name="comment"]').value,
+                is_public: document.getElementById('feedbackPublic').checked,
+            };
+            fetch('/api/feedback/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.status === 'ok') {
+                    alert('Feedback submitted!');
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('feedbackModal'));
+                    modal.hide();
+                } else {
+                    alert('Error: ' + (d.detail || 'Unknown error'));
+                }
+            })
+            .catch(function(err) {
+                alert('Error submitting feedback: ' + err);
+            });
+        });
+
+        function toggleFavorite(btn, paperData) {
+            var isFav = btn.classList.contains('btn-fav-active');
+            var url = isFav ? '/api/favorites/remove' : '/api/favorites/add';
+            var body = isFav ? JSON.stringify({paper_id: btn.getAttribute('data-paper-id')}) : JSON.stringify(paperData);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: body,
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.status === 'ok') {
+                    if (isFav) {
+                        btn.classList.remove('btn-fav-active');
+                        btn.classList.add('btn-fav-inactive');
+                        btn.innerHTML = '<i class="bi bi-heart"></i>';
+                        btn.setAttribute('data-paper-id', '');
+                    } else {
+                        btn.classList.remove('btn-fav-inactive');
+                        btn.classList.add('btn-fav-active');
+                        btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+                        btn.setAttribute('data-paper-id', d.paper_id);
+                    }
+                } else {
+                    if (d.detail && d.detail.includes('log in')) {
+                        alert('Please log in to use favorites.');
+                    } else {
+                        alert('Error: ' + (d.detail || 'Unknown error'));
+                    }
+                }
+            })
+            .catch(function(err) {
+                alert('Error: ' + err);
+            });
+        }
+
+        function openFeedback(btn) {
+            var card = btn.closest('.result-card');
+            document.getElementById('feedbackPaperTitle').value = card.querySelector('.result-title').textContent.trim();
+            var authorsEl = card.querySelector('.result-authors');
+            document.getElementById('feedbackPaperAuthors').value = authorsEl ? authorsEl.textContent.replace('👥', '').trim() : '';
+            var sourceBadge = card.querySelector('.source-badge');
+            document.getElementById('feedbackPaperSource').value = sourceBadge ? sourceBadge.textContent.trim() : '';
+            document.getElementById('feedbackRating').value = 0;
+            document.querySelectorAll('.star-btn').forEach(function(s) {
+                s.classList.remove('bi-star-fill');
+                s.classList.add('bi-star');
+            });
+            var modal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+            modal.show();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+
+from .database import init_db, get_session, close_session
+from .models import User, Paper, SearchHistory, Favorite, Feedback
+from .crud import (
+    create_user,
+    get_user_by_username,
+    get_user_by_email,
+    get_user_by_id,
+    authenticate_user,
+    save_search_history,
+    get_user_search_history,
+    add_favorite,
+    remove_favorite,
+    get_user_favorites,
+    is_favorite,
+    add_feedback,
+    get_paper_feedback,
+    get_recent_papers,
+    save_or_get_paper,
+)
+
+__all__ = [
+    "init_db",
+    "get_session",
+    "close_session",
+    "User",
+    "Paper",
+    "SearchHistory",
+    "Favorite",
+    "Feedback",
+    "create_user",
+    "get_user_by_username",
+    "get_user_by_email",
+    "get_user_by_id",
+    "authenticate_user",
+    "save_search_history",
+    "get_user_search_history",
+    "add_favorite",
+    "remove_favorite",
+    "get_user_favorites",
+    "is_favorite",
+    "add_feedback",
+    "get_paper_feedback",
+    "get_recent_papers",
+    "save_or_get_paper",
+]

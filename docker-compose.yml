@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  scholarsearch:
+    build: .
+    container_name: scholarsearch
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./exports:/app/exports
+    environment:
+      - SCHOLARSEARCH_HOST=0.0.0.0
+      - SCHOLARSEARCH_PORT=8000
+      - MYSQL_HOST=${MYSQL_HOST:-host.docker.internal}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-scholarsearch_db}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

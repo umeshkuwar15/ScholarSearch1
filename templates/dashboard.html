@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ScholarSearch</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <style>
+        :root { --primary-glow: #0d6efd; --card-bg: #1a1d23; --border-color: #2d323e; }
+        body { background: #0f1117; min-height: 100vh; }
+        .navbar-brand { font-weight: 700; font-size: 1.5rem; background: linear-gradient(135deg,#0d6efd,#6610f2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .dashboard-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem; height: 100%; }
+        .dashboard-header { padding: 2rem 0 1rem; }
+        .stat-number { font-size: 2rem; font-weight: 700; color: #e0e0e0; }
+        .stat-label { color: #6c757d; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .history-item, .fav-item { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; transition: all 0.2s ease; }
+        .history-item:hover, .fav-item:hover { border-color: var(--primary-glow); }
+        .section-title { color: #e0e0e0; font-weight: 600; margin: 1.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border-color); }
+        .empty-state { text-align: center; padding: 3rem; color: #6c757d; }
+        .profile-field { margin-bottom: 1rem; }
+        .profile-field label { color: #6c757d; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .profile-field .value { color: #e0e0e0; font-size: 1rem; }
+        .footer { text-align: center; padding: 2rem 0; color: #6c757d; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark border-bottom border-secondary border-opacity-25">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-search-heart"></i> ScholarSearch</a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="btn btn-outline-light btn-sm"><i class="bi bi-search"></i> Search</a>
+                <div class="dropdown">
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> {{ user.username }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h2 class="text-light"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+            <p class="text-secondary">Welcome back, <strong class="text-light">{{ user.full_name or user.username }}</strong>!</p>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="dashboard-card text-center">
+                    <div class="stat-number">{{ history|length }}</div>
+                    <div class="stat-label"><i class="bi bi-clock-history"></i> Recent Searches</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card text-center">
+                    <div class="stat-number">{{ favorites|length }}</div>
+                    <div class="stat-label"><i class="bi bi-heart"></i> Favorites</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card text-center">
+                    <div class="stat-number">{{ user.id }}</div>
+                    <div class="stat-label"><i class="bi bi-person-badge"></i> User ID</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card text-center">
+                    <div class="stat-number">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</div>
+                    <div class="stat-label"><i class="bi bi-calendar-check"></i> Joined</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="dashboard-card">
+                    <h5 class="text-light mb-3"><i class="bi bi-person-vcard"></i> Profile</h5>
+                    <div class="profile-field">
+                        <label>Username</label>
+                        <div class="value">{{ user.username }}</div>
+                    </div>
+                    <div class="profile-field">
+                        <label>Email</label>
+                        <div class="value">{{ user.email }}</div>
+                    </div>
+                    <div class="profile-field">
+                        <label>Full Name</label>
+                        <div class="value">{{ user.full_name or '—' }}</div>
+                    </div>
+                    <div class="profile-field">
+                        <label>Institution</label>
+                        <div class="value">{{ user.institution or '—' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="dashboard-card">
+                    <h5 class="text-light mb-3"><i class="bi bi-clock-history"></i> Recent Searches</h5>
+                    {% if history %}
+                    <div style="max-height:400px;overflow-y:auto;">
+                        {% for entry in history %}
+                        <div class="history-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="text-light">
+                                        {% if entry.query %}
+                                        <i class="bi bi-search"></i> {{ entry.query[:60] }}
+                                        {% elif entry.author %}
+                                        <i class="bi bi-person"></i> {{ entry.author[:60] }}
+                                        {% else %}
+                                        <em>Empty search</em>
+                                        {% endif %}
+                                    </strong>
+                                    <div class="text-secondary small mt-1">
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ entry.source }}</span>
+                                        {% if entry.total_found %}<span class="ms-2">{{ entry.total_found }} results</span>{% endif %}
+                                    </div>
+                                </div>
+                                <small class="text-secondary text-nowrap ms-2">{{ entry.searched_at.strftime('%H:%M %d/%m') if entry.searched_at else '' }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+                        <p class="mb-0">No search history yet.<br>Start searching on the <a href="/" class="text-primary">home page</a>!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="dashboard-card">
+                    <h5 class="text-light mb-3"><i class="bi bi-heart"></i> Favorites</h5>
+                    {% if favorites %}
+                    <div style="max-height:400px;overflow-y:auto;">
+                        {% for fav in favorites %}
+                        <div class="fav-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="text-light">
+                                        {% if fav.paper and fav.paper.url %}
+                                        <a href="{{ fav.paper.url }}" target="_blank" class="text-light text-decoration-none">{{ fav.paper.title[:60] }}{% if fav.paper.title|length > 60 %}...{% endif %}</a>
+                                        {% else %}
+                                        {{ fav.paper.title[:60] if fav.paper else 'Unknown paper' }}{% if fav.paper and fav.paper.title|length > 60 %}...{% endif %}
+                                        {% endif %}
+                                    </strong>
+                                    <div class="text-secondary small mt-1">
+                                        {% if fav.paper and fav.paper.authors %}
+                                        <i class="bi bi-people"></i>
+                                        {% set authors = fav.paper.authors|fromjson %}
+                                        {{ authors[:3]|join(', ') }}{% if authors|length > 3 %} et al.{% endif %}
+                                        {% endif %}
+                                        {% if fav.paper and fav.paper.source %}
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary ms-1">{{ fav.paper.source }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <small class="text-secondary text-nowrap ms-2">{{ fav.created_at.strftime('%d/%m') if fav.created_at else '' }}</small>
+                            </div>
+                            {% if fav.notes %}
+                            <div class="text-secondary small mt-1"><i class="bi bi-chat-quote"></i> {{ fav.notes[:80] }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-heart fs-1 d-block mb-2"></i>
+                        <p class="mb-0">No favorites yet.<br>Search papers and click <i class="bi bi-heart text-danger"></i> to save them!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="dashboard-card">
+                    <h5 class="text-light mb-3"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/" class="btn btn-primary"><i class="bi bi-search"></i> New Search</a>
+                        <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="container">
+            <p class="mb-0">
+                <i class="bi bi-search-heart"></i> ScholarSearch v1.0.0 &mdash;
+                Powered by <a href="https://arxiv.org" class="text-secondary" target="_blank">arXiv</a>,
+                <a href="https://crossref.org" class="text-secondary" target="_blank">CrossRef</a>,
+                <a href="https://openalex.org" class="text-secondary" target="_blank">OpenAlex</a>,
+                <a href="https://pubmed.ncbi.nlm.nih.gov/" class="text-secondary" target="_blank">PubMed</a>,
+                <a href="https://semanticscholar.org" class="text-secondary" target="_blank">Semantic Scholar</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
